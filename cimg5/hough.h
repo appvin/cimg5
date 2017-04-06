@@ -174,10 +174,16 @@ vector<vector<double>> hough(CImg<float> img, CImg<float> src, double val)
 			index += 2;
 		}
 	}
+	if (sqrt(pow(order_ver[1][0] - order_ver[0][0], 2) + pow(order_ver[1][1] - order_ver[0][1], 2)) < sqrt(pow(order_ver[3][0] - order_ver[0][0], 2) + pow(order_ver[3][1] - order_ver[0][1], 2)))
+	{
+		vector<double> vt = order_ver[1];
+		order_ver[1] = order_ver[3];
+		order_ver[3] = vt;
+	}
 	cout << "vertex : " << endl;
 	for (int i = 0; i<int(ver.size()); i++)
 	{
-		cout << "( " << int(ver[i][0]) << " , " << int(ver[i][1]) << " )" << endl;	
+		cout << "( " << int(order_ver[i][0]) << " , " << int(order_ver[i][1]) << " )" << endl;
 	}
 	dst.draw_circle(int(order_ver[0][0]), int(order_ver[0][1]), 6, red, 1);
 	dst.draw_circle(int(order_ver[1][0]), int(order_ver[1][1]), 6, green, 1);

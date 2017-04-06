@@ -8,7 +8,7 @@
 using namespace std;
 using namespace cimg_library;
 
-int A_height = 424, A_width = 300;
+int A_height = 368, A_width = 260;
 
 CImg<double> pro_solve(vector<vector<double>> p)
 {
@@ -25,8 +25,8 @@ CImg<double> pro_solve(vector<vector<double>> p)
 	CImg<double> A(8, 8), B(1, 8);
 	for (int i = 0; i < 4; i++)
 	{
-		A(0, i) = p[i][0];
-		A(1, i) = p[i][1];
+		A(0, i) = uv[i][0];
+		A(1, i) = uv[i][1];
 		A(2, i) = 1;
 		A(3, i) = A(4, i) = A(5, i) = 0;
 		A(6, i) = -uv[i][0] * p[i][0];
@@ -35,16 +35,15 @@ CImg<double> pro_solve(vector<vector<double>> p)
 	}
 	for (int i = 0; i < 4; i++)
 	{
-		A(3, i+4) = p[i][0];
-		A(4, i+4) = p[i][1];
+		A(3, i+4) = uv[i][0];
+		A(4, i+4) = uv[i][1];
 		A(5, i+4) = 1;
-		A(0, i+4) = A(1, i) = A(2, i) = 0;
+		A(0, i+4) = A(1, i + 4) = A(2, i + 4) = 0;
 		A(6, i+4) = -uv[i][0] * p[i][1];
 		A(7, i+4) = -uv[i][1] * p[i][1];
 		B(0, i+4) = p[i][1];
 	}
-	
-	return A.solve(B);
+	return B.solve(A);
 }
 
 int main()
@@ -56,7 +55,7 @@ int main()
 	float threshold[] = { 3.5f, 3.5f, 5.0f, 3.5f, 3.5f, 3.5f };
 	
 	//先进行canny处理，再进行hough变换，并存在result文件夹中
-	for (int ni = 0; ni < 6; ni++)
+	for (int ni =0; ni < 6; ni++)
 	{
 		cout << endl << filename[ni] << " : " << endl;
 		canny_img img("Dataset\\" + filename[ni], sigma[ni], threshold[ni]);
@@ -66,14 +65,21 @@ int main()
 		CImg<double> para = pro_solve(vertex);
 		CImg<double> dst(A_width, A_height, 1, 3);
 		int u, v;
-		cimg_forXY(dst, x, y)
+		/*cimg_forXY(dst, x, y)
 		{
-			u = int((para(0, 0)*x + para(0, 1)*y + para(0, 2)) / (para(0, 6)*x + para(0, 7)*y + 1));
-			v = int((para(0, 3)*x + para(0, 4)*y + para(0, 5)) / (para(0, 6)*x + para(0, 7)*y + 1));
+			u = int((para(0, 0)*x + para(1, 0)*y + para(2, 0)) / (para(6, 0)*x + para(7, 0)*y + 1));
+			v = int((para(3, 0)*x + para(4, 0)*y + para(5, 0)) / (para(6, 0)*x + para(7, 0)*y + 1));
 			dst(x, y, 0) = src(u, v, 0);
 			dst(x, y, 1) = src(u, v, 1);
 			dst(x, y, 2) = src(u, v, 2);
 		}
-		dst.display();
+		dst.display();*/
+		CImg<double> wp(src._width, src._height, 1, 2);
+		cimg_forXY(wp, x, y)
+		{
+			wp(x, y, 0) = int((para(0, 0)*x + para(1, 0)*y + para(2, 0)) / (para(6, 0)*x + para(7, 0)*y + 1));
+			wp(x, y, 1) = int((para(3, 0)*x + para(4, 0)*y + para(5, 0)) / (para(6, 0)*x + para(7, 0)*y + 1));
+		}
+		src.warp(wp).crop(0,0,A_width,A_height).display();
 	}
 }
