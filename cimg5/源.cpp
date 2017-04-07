@@ -1,15 +1,16 @@
 #include "CImg.h"
 #include "canny_class.h"
 #include <iostream>
-#include <math.h>
 #include <vector>
 #include "hough.h"
+#include <fstream>
 
 using namespace std;
 using namespace cimg_library;
 
-int A_height = 368, A_width = 260;
+int A_height = 297, A_width = 210;
 
+//根据原图求得的A4纸四个定点与A4纸4个定点建立方程组，并求解得到系数
 CImg<double> pro_solve(vector<vector<double>> p)
 {
 	vector<vector<double>> uv;
@@ -48,14 +49,30 @@ CImg<double> pro_solve(vector<vector<double>> p)
 
 int main()
 {
-	//设置参数
-	string filename[] = { "dataset (1).bmp", "dataset (2).bmp", "dataset (3).bmp", "dataset (4).bmp", "dataset (5).bmp", "dataset (6).bmp" };
-	double thre_val[] = { 0.5,0.6,0.6,0.5,0.5,0.5 };
-	float sigma[] = { 6.0f, 6.0f, 9.0f, 6.0f, 6.0f, 6.0f };
-	float threshold[] = { 3.5f, 3.5f, 5.0f, 3.5f, 3.5f, 3.5f };
-	
+	//设置参数,并获得文件名
+	vector<string> filename;
+	ifstream in;
+	in.open("Dataset\\filename.txt");
+	string st;
+	while (getline(in,st))
+	{
+		filename.push_back(st);
+	}
+	int filenum = int(filename.size());
+	vector<double> thre_val;
+	vector<float> sigma, threshold;
+	for (int i = 0; i < filenum; i++)
+	{
+		thre_val.push_back(0.5);
+		sigma.push_back(6.0f);
+		threshold.push_back(3.5f);
+	}
+	thre_val[1] = thre_val[2] = thre_val[10] = 0.6; thre_val[13] = 0.7;
+	sigma[2]=sigma[15] = 9.0f;
+	threshold[2]= threshold[15] = 5.0f;
+
 	//先进行canny处理，再进行hough变换，并存在result文件夹中
-	for (int ni =0; ni < 6; ni++)
+	for (int ni =0; ni < filenum; ni++)
 	{
 		cout << endl << filename[ni] << " : " << endl;
 		canny_img img("Dataset\\" + filename[ni], sigma[ni], threshold[ni]);
@@ -63,23 +80,16 @@ int main()
 		CImg<float> src(("Dataset\\" + filename[ni]).c_str());
 		vector<vector<double>> vertex = hough(c_img, src, thre_val[ni]);
 		CImg<double> para = pro_solve(vertex);
-		CImg<double> dst(A_width, A_height, 1, 3);
-		int u, v;
-		/*cimg_forXY(dst, x, y)
-		{
-			u = int((para(0, 0)*x + para(1, 0)*y + para(2, 0)) / (para(6, 0)*x + para(7, 0)*y + 1));
-			v = int((para(3, 0)*x + para(4, 0)*y + para(5, 0)) / (para(6, 0)*x + para(7, 0)*y + 1));
-			dst(x, y, 0) = src(u, v, 0);
-			dst(x, y, 1) = src(u, v, 1);
-			dst(x, y, 2) = src(u, v, 2);
-		}
-		dst.display();*/
+
+		//根据求得的系数，得到变换矩阵wp
 		CImg<double> wp(src._width, src._height, 1, 2);
 		cimg_forXY(wp, x, y)
 		{
 			wp(x, y, 0) = int((para(0, 0)*x + para(1, 0)*y + para(2, 0)) / (para(6, 0)*x + para(7, 0)*y + 1));
 			wp(x, y, 1) = int((para(3, 0)*x + para(4, 0)*y + para(5, 0)) / (para(6, 0)*x + para(7, 0)*y + 1));
 		}
-		src.warp(wp).crop(0,0,A_width,A_height).display();
+		//对变换后图像进行裁剪
+		(CImg<float>(("Dataset\\" + filename[ni]).c_str()),src.warp(wp).crop(0,0,A_width,A_height).display()).save(("result\\"+ filename[ni]).c_str());
 	}
+	return 0;
 }

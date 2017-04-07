@@ -144,8 +144,8 @@ vector<vector<double>> hough(CImg<float> img, CImg<float> src, double val)
 			}
 		}
 	}
-
-	//画点
+	//dst.display();
+	//画点，并对四个点进行排序，使其顺序为长边短边长边短边
 	double smax = 0;
 	int six = 0, siy = 0;
 	double dist;
